@@ -1,0 +1,9 @@
+node_modules
+docs
+dist
+.idea
+.idea/
+.vs
+.vs/
+.vscode
+.vscode/

@@ -1,0 +1,15 @@
+<div>
+<button @click="onToggleStructure">Toggle structure</button>
+<div>{{data.message}}</div>
+[{{data.pass}}]
+<input type="text">
+<i-if test="data.pass">
+    <div>Div 1</div>
+    <span>Span 1</span>
+    <span>Span 2</span>
+    <span>Span 3</span>
+</i-if>
+</div>
+<div>
+<component-outlet></component-outlet>
+</div>
