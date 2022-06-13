@@ -1,6 +1,6 @@
 import Component from "./component";
 import evalExpression from "../jsep/expressions";
-import has = Reflect.has;
+import Router from "./router/router";
 
 class SwithStatus{
     public value: any;
@@ -20,6 +20,8 @@ class EventListener{
 
 export default class Indigo {
     static scheduleComponentInterval = 50;
+
+    public router : Router;
 
     private eventListeners: Array<EventListener> = Array();
 
@@ -43,7 +45,7 @@ export default class Indigo {
 
     private renderer = Array<Component>();
 
-    private currentRenderElement: HTMLElement | null = null;
+    private rDOMTree: HTMLElement | null = null;
     private currentRenderComponent: string = "";
 
     private switchStack = Array<SwithStatus>();
@@ -51,10 +53,12 @@ export default class Indigo {
     private componentCache = new Map<number, Component>();
     private cacheId = 0;
 
+
     constructor() {
         this.sourceTree = null as unknown as HTMLElement;
         this.vDOMTree = null as unknown as HTMLElement;
         this.currentComponent = null as unknown as Component;
+        this.router = new Router(this);
     }
 
 
@@ -63,8 +67,6 @@ export default class Indigo {
         this.resetEventListeners();
 
         this.componentStack = Array();
-        this.componentOutletStack = Array();
-        this.currentComponentOutlet = null;
 
         this.namespace = new Map<string, Object>();
         this.namespaceStack = Array<Map<String, Object>>();
@@ -85,10 +87,15 @@ export default class Indigo {
 
 
     render(target: HTMLElement, componentName: string) {
+        if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
+        this.scheduleIntervalId=-1;
+
+        if(this.rootComponent)
+            this.rootComponent.onDestroy();
 
         this.resetAttributes();
 
-        this.currentRenderElement = target;
+        this.rDOMTree = target;
         this.currentRenderComponent = componentName;
 
         this.sourceTree = document.createElement("DIV");
@@ -101,16 +108,18 @@ export default class Indigo {
         this.sourceTree.innerHTML = this.currentComponent.dataObject.template;
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
+        this.rootComponent.onCreate();
+
         this.componentStack = new Array<Component>();
 
         this.parseRDOMTree(this.vDOMTree, target, false, null as unknown as HTMLElement);
-
-        //console.log(this.vDOMTree);
-        //console.log(target);
     }
 
 
     forceUpdate() {
+
+        if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
+        this.scheduleIntervalId=-1;
 
         if(this.rootComponent)
             this.rootComponent.onDestroy();
@@ -121,21 +130,30 @@ export default class Indigo {
         this.vDOMTree = document.createElement("DIV");
 
         this.currentComponent = this.createComponent(this.currentRenderComponent, this.sourceTree, this.vDOMTree);
+        this.rootComponent=this.currentComponent;
         this.vDOMTree.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
         this.sourceTree.innerHTML = this.currentComponent.dataObject.template;
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
+
+        this.rootComponent.onCreate();
+
         this.currentComponent = this.rootComponent as Component;
         this.componentStack = new Array<Component>();
-        this.parseRDOMTree(this.vDOMTree, this.currentRenderElement as HTMLElement, false, null as unknown as HTMLElement);
+        this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
     }
 
 
     updateRDOMTree(){
+
+        if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
+        this.scheduleIntervalId=-1;
+
         this.resetEventListeners();
         this.currentComponent = this.rootComponent as Component;
         this.componentStack = new Array<Component>();
-        this.parseRDOMTree(this.vDOMTree, this.currentRenderElement as HTMLElement, false, null as unknown as HTMLElement);
+
+        this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
     }
 
 
@@ -388,30 +406,26 @@ export default class Indigo {
 
     _createComponent(currentSrcNode: HTMLElement, currentDestNode: HTMLElement) {
 
-        this.pushComponent(this.createComponent(currentDestNode.nodeName, currentSrcNode, currentDestNode));
+        this.pushComponent(this.createComponent(currentDestNode.nodeName.toLowerCase(), currentSrcNode, currentDestNode));
         currentDestNode.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
         this.copyVDOMAttributes(currentSrcNode as HTMLElement, currentDestNode as HTMLElement);
         let tempDestNode = null;
 
+        this.currentComponent.onCreate();
+
         //Обрабатывем элементы внутре тега компонента
-        if (currentSrcNode.firstChild) {
-            tempDestNode = document.createElement("DIV");
-            this.parseVDOMTree(currentSrcNode, tempDestNode);
-        }
+        //if (currentSrcNode.firstChild) {
+        //    tempDestNode = document.createElement("DIV");
+        //    this.parseVDOMTree(currentSrcNode, tempDestNode);
+        //}
 
         //Готовим шаблон
         let srcTempNode = document.createElement(currentSrcNode.nodeName);
         srcTempNode.innerHTML = this.currentComponent.dataObject.template;
 
-        //Готовим стек outlet
-        this.componentOutletStack.push(this.currentComponentOutlet as ChildNode);
-        this.currentComponentOutlet = tempDestNode;
-
         //Промсматриваем дерево  в глубь
         this.parseVDOMTree(srcTempNode, currentDestNode);
-
-        this.currentComponentOutlet = this.componentOutletStack.pop() as ChildNode;
 
         this.popComponent();
     }
@@ -431,16 +445,18 @@ export default class Indigo {
                 currentDestElement = document.createComment(srcElement.textContent as string);
                 break;
 
-            case "component-outlet":
-                if (this.currentComponentOutlet == null) break;
+            case "component-children":
 
-                while (this.currentComponentOutlet.firstChild) {
-                    let elem = this.currentComponentOutlet.firstChild;
+                let tempElement=document.createElement("component-children");
+                this.parseVDOMTree(this.currentComponent.baseElement, tempElement);
+
+                while(tempElement.firstChild){
+                    let elem=tempElement.firstChild;
                     elem.remove();
                     parentDestElement.appendChild(elem);
                 }
-                this.currentComponentOutlet.remove();
-                break;
+
+                return;
 
             case "i-for":
                 this.parseFor(srcElement as HTMLElement, parentDestElement as HTMLElement);
@@ -561,6 +577,8 @@ export default class Indigo {
                 currentDest=this.parseRDOMTree(currentSrc, destElement, true, currentDest as HTMLElement);
                 this.popComponent();
 
+                (component as Component).onMount();
+
                 currentSrc = currentSrc.nextSibling as HTMLElement;
                 continue;
             }
@@ -613,22 +631,18 @@ export default class Indigo {
 
         let tempDestNode;
 
-        for(let item of component.children){
+        for(let item of component.children)
             item.onDestroy();
-        }
-
         component.children=Array();
-
-
 
         //Рендерим то, что содержится внутри тела компонента
         //(<component_name>_здесь_</component_name>
         tempDestNode = document.createElement("DIV");
         this.parseVDOMTree(component.baseElement, tempDestNode);
 
-        //Готовим стек для component-outlet.
+        //Готовим стек для component-children.
         //Данные будут доступны в шаблоне, в теге
-        //<component-outlet></component-outlet>
+        //<component-children></component-children>
         this.componentOutletStack.push(this.currentComponentOutlet as ChildNode);
         this.currentComponentOutlet=tempDestNode;
 
@@ -682,8 +696,9 @@ export default class Indigo {
 
         this.renderer.push(component);
 
-        if(this.scheduleIntervalId!=-1)
+        if(this.scheduleIntervalId!=-1) {
             window.clearInterval(this.scheduleIntervalId);
+        }
 
         //Асинхронный вызов scheduleRender. Повторный вызов
         //добавляет компонент в очередь, отменяет предыдущий setInterval
@@ -746,19 +761,23 @@ export default class Indigo {
                     let name=this.camelCase(srcAttr.name.slice(1));
                     let value=null;
 
+                    this.currentComponent.modifyMode=true;
+
                     value=this.evalExpression(srcAttr.value, this.currentComponent.parent.dataObject);
                     let data=this.currentComponent.dataObject["data"];
                     if(data[name]!==value) data[name]=value;
+
+                    this.currentComponent.modifyMode=false;
                 }
             }
 
             //Обрабатываем обычный атрибут
-            let src=(srcElement.getAttributeNode(srcAttr.name) as Attr).cloneNode() as Attr;
-            src.value=srcAttr.value;
+            let src = (srcElement.getAttributeNode(srcAttr.name) as Attr).cloneNode() as Attr;
+            src.value = srcAttr.value;
 
-            let dest=src.cloneNode();
+            let dest = src.cloneNode();
 
-            dest.textContent=this.parseInterpolation(dest.textContent as string);
+            dest.textContent = this.parseInterpolation(dest.textContent as string);
             destElement.setAttributeNode(dest as Attr);
         }
 
@@ -849,7 +868,7 @@ export default class Indigo {
 
     evalExpression(expr:string, startObject: any):any {
         this.pushNamespace()
-        let result = evalExpression(expr, startObject, this.namespaceStack, this.currentComponent.dataObject.name);
+        let result = evalExpression(expr, startObject, this.namespaceStack, this.currentComponent.name);
         this.popNamespace();
         return(result);
     }

@@ -1,9 +1,13 @@
-<h1>Привет TODO</h1>
-<app-item :message="'level 1'">
-    <app-item :message="'level 2'">
-        <app-item :message="'level 3'">
-            <app-item :message="'level 4'"></app-item>
-        </app-item>
-    </app-item>
-</app-item>
-<app-item :message="'level 1'"></app-item>
+<router-link :normal-class="css['normal']" :active-class="css['active']" :hover-class="css['hover']" :url="'/'" :title="'Главная страница'">Home</router-link>
+<router-link :normal-class="css['normal']" :active-class="css['active']" :hover-class="css['hover']" :url="'/shop/10'" :title="'Магазин'">Shop</router-link>
+<router-link :normal-class="css['normal']" :active-class="css['active']" :hover-class="css['hover']" :url="'/basket/20'" :title="'Корзина покупателя'">Basket</router-link>
+
+<route :url="'/shop/:id'" :title="'Магазин'">
+    <shop></shop>
+</route>
+<route :url="'/basket/:id'" :title="'Корзина'">
+    <basket></basket>
+</route>
+<route :url="'/'" :title="'Главная'">
+    <home></home>
+</route>

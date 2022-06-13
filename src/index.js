@@ -1,11 +1,17 @@
 import "./styles.css"
 import Indigo from "./lib/indigo/indigo"
 import App from "./app/components/app/app"
-import AppItem from "./app/components/app-item/app-item"
-
-var test=App();;
+import Shop from "./app/components/shop/shop"
+import Basket from "./app/components/basket/basket"
+import Route from "./lib/indigo/router/route"
+import RouterLink from "./lib/indigo/router/router-link";
+import Home from "./app/components/home/home"
 
 let indigo=new Indigo();
 indigo.component("app", App);
-indigo.component("app-item", AppItem);
+indigo.component("shop", Shop);
+indigo.component("home", Home);
+indigo.component("basket", Basket);
+indigo.component("route", Route);
+indigo.component("router-link", RouterLink);
 indigo.render(document.querySelector("#app"), "app");

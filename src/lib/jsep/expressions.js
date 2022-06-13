@@ -58,6 +58,11 @@ function parseExpression(expression, startObject, namespace, debugString, contex
             }
 
             throw Error("Unknown identifier: '"+expression.name+"' ("+debugString+")");
+
+        case "ThisExpression":{
+            return(startObject);
+        }
+
             
         case "ConditionalExpression":
 

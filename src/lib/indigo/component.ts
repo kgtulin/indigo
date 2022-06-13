@@ -27,6 +27,8 @@ export default class Component{
         this.parent=parent;
         this.indigo=indigo;
 
+        this.dataObject.router=this.indigo.router;
+
         if(this.parent)
             this.parent.appendChild(this);
 
@@ -53,13 +55,14 @@ export default class Component{
 
     prepareProxy(parent: any, itemName:string){
         if(typeof parent[itemName] !== "object") return;
+        if(parent[itemName]==null)return;
 
         // Обработчик событий delete и set
         const handler = {
 
             set: (target:any, key:string, value:any)=>{
 
-                //if(target[key]===value)return(true);
+                if(target[key]===value)return(true);
 
                 target[key]=value;
                 this.onModified();
@@ -92,6 +95,8 @@ export default class Component{
     // Настраиваем указатель this на методы из data-компонента
     bindMethods(methods: any){
         for(let method in methods) {
+
+            if(typeof methods[method]!="function") continue
             methods[method] = methods[method].bind(this.dataObject)
         }
     }
@@ -152,16 +157,23 @@ export default class Component{
         for(const item of this.children)
             item.onDestroy();
 
-        if(this.dataObject.methods.onDestory)
+        if(this.dataObject.methods && this.dataObject.methods.onDestroy)
             this.dataObject.methods.onDestroy();
+
+        this.children=Array();
     }
 
 
     onCreate(){
-        if(this.dataObject.methods.onCreate)
+        if(this.dataObject.methods && this.dataObject.methods.onCreate)
             this.dataObject.methods.onCreate();
     }
 
+
+    onMount(){
+        if(this.dataObject.methods && this.dataObject.methods.onMount)
+            this.dataObject.methods.onMount();
+    }
 
     hasParent(parent:Component): boolean
     {
