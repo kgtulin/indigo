@@ -10,10 +10,16 @@ function parseExpression(expression, startObject, namespace, debugString, contex
                 throw Error("Error in call expression ("+debugString+")");
 
             let params=Array();
-            for(let i=0; i<expression.arguments.length; i++)
-                params.push( parseExpression(expression.arguments[i], startObject, namespace, debugString, context));
+            for(let i=0; i<expression.arguments.length; i++) {
+                context.firstPass=true;
+                const param=parseExpression(expression.arguments[i], startObject, namespace, debugString, context);
+                params.push(param);
+                context.firstPass=false;
+            }
 
-            return(caller(params));
+            if(typeof caller!="function")
+                throw Error("Error in call expression: the object is not a function ("+debugString+")")
+            return caller.apply(null, params);
 
         case "MemberExpression":
             let object=parseExpression(expression.object, startObject, namespace, debugString, context);
@@ -34,12 +40,19 @@ function parseExpression(expression, startObject, namespace, debugString, contex
             if(object==null || object==undefined || prop==null || prop==undefined)
                 throw Error("Error in member expression ("+debugString+")");
 
+            /*
+             if(typeof object[prop]==="function") {
+                 let func=object[prop];
+                 return (object[prop].bind(object))
+             }
+             */
+
             return object[prop];
 
         case "Identifier":
             if(context.firstPass) {
 
-                if(startObject && startObject[expression.name]){
+                if(startObject && startObject[expression.name]!==null && startObject[expression.name]!==undefined){
                     return startObject[expression.name];
                 }
                 else
@@ -66,14 +79,18 @@ function parseExpression(expression, startObject, namespace, debugString, contex
             
         case "ConditionalExpression":
 
-            let  test=parseExpression(expression.test, startObject, namespace, debugString, context);
+            let test=parseExpression(expression.test, startObject, namespace, debugString, context);
+            let result=null;
 
             context.firstPass=true;
+
             if(Boolean(test))
-                return parseExpression(expression.consequent, startObject, namespace, debugString, context);
+                result = parseExpression(expression.consequent, startObject, namespace, debugString, context);
             else
-                return parseExpression(expression.alternate, startObject, namespace, debugString, context);
+                result = parseExpression(expression.alternate, startObject, namespace, debugString, context);
+
             context.firstPass=false;
+            return(result);
             break
 
         case "Literal":

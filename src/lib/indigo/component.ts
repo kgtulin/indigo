@@ -15,41 +15,58 @@ export default class Component{
 
     public id: number = 0;
 
-    constructor(id:number, name:string, baseElement: HTMLElement, vDOMElement: HTMLElement, dataObject:any, parent: Component, indigo: Indigo){
+    constructor(id:number, name:string, baseElement: HTMLElement, vDOMElement: HTMLElement, dataObject:any, parent: Component, indigo: Indigo) {
 
-        this.name=name;
-        this.id=id;
+        this.name = name;
+        this.id = id;
 
-        this.baseElement=baseElement;
-        this.vDOMElement=vDOMElement;
+        this.baseElement = baseElement;
+        this.vDOMElement = vDOMElement;
 
-        this.dataObject=dataObject;
-        this.parent=parent;
-        this.indigo=indigo;
+        this.dataObject = dataObject;
+        this.parent = parent;
 
-        this.dataObject.router=this.indigo.router;
+        if (this.parent) this.dataObject.parent = this.parent.dataObject;
+        else this.dataObject.parent = null;
 
-        if(this.parent)
+        this.indigo = indigo;
+        this.dataObject.name = name;
+
+        this.dataObject.router = this.indigo.router;
+
+        if (this.parent)
             this.parent.appendChild(this);
 
         // Выполняем наследование для data-компонента,
         // компонент может быть наследован от нескольких родителей
-        if(this.dataObject.extends){
-            for(let item of this.dataObject.extends){
-                const base=item();
+        if (this.dataObject.extends) {
+            for (let item of this.dataObject.extends) {
+                const base = item();
                 Component.ExtendComponentData(dataObject, base)
             }
         }
 
         // Настраиваем объект this
-        if(this.dataObject.methods)
+        if (this.dataObject.methods)
             this.bindMethods(dataObject.methods);
 
         // Подготавливаем прокси
-        if(this.dataObject.data)
+        if (this.dataObject.data)
             this.prepareProxy(this.dataObject, "data");
 
-        this.dataObject.indigo=indigo;
+        this.dataObject.indigo = indigo;
+
+        //Функция поиска провайдера в родительских компонентах
+        this.dataObject.provider = (name: string)=>{
+            let current: Component = this;
+            while(current){
+                if(current.dataObject.providers && current.dataObject.providers[name])
+                    return(current.dataObject.providers[name]);
+                current=current.parent;
+            }
+            throw Error("Provider \""+name+"\" not found at \""+this.name+"\" component")
+        };
+
     }
 
 
@@ -60,7 +77,7 @@ export default class Component{
         // Обработчик событий delete и set
         const handler = {
 
-            set: (target:any, key:string, value:any)=>{
+            set: (target:any, key:string, value:any) => {
 
                 if(target[key]===value)return(true);
 
@@ -68,6 +85,7 @@ export default class Component{
                 this.onModified();
                 return(true);
             },
+
 
             deleteProperty: (target:any, key:string)=> {
                 if (key in target) {
@@ -106,8 +124,10 @@ export default class Component{
     static ExtendComponentData(child: any, base: any){
 
         if(base.extends)
-            for(let item of base.extends)
+            for(let item of base.extends){
+                let subItem=item();
                 Component.ExtendComponentData(base, item);
+            }
 
         for(let item in base){
 
@@ -154,6 +174,7 @@ export default class Component{
 
 
     onDestroy(){
+        this.modifyMode=true;
         for(const item of this.children)
             item.onDestroy();
 
@@ -161,12 +182,15 @@ export default class Component{
             this.dataObject.methods.onDestroy();
 
         this.children=Array();
+        this.modifyMode=false;
     }
 
 
     onCreate(){
+        this.modifyMode=true;
         if(this.dataObject.methods && this.dataObject.methods.onCreate)
             this.dataObject.methods.onCreate();
+        this.modifyMode=false;
     }
 
 

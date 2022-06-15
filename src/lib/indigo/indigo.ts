@@ -87,7 +87,10 @@ export default class Indigo {
 
 
     render(target: HTMLElement, componentName: string) {
-        if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
+        if(this.scheduleIntervalId!=-1) {
+            window.clearInterval(this.scheduleIntervalId);
+        }
+
         this.scheduleIntervalId=-1;
 
         if(this.rootComponent)
@@ -122,23 +125,26 @@ export default class Indigo {
         this.scheduleIntervalId=-1;
 
         if(this.rootComponent)
-            this.rootComponent.onDestroy();
+            for(let item of this.rootComponent.children)
+                item.onDestroy();
 
         this.resetAttributes();
 
         this.sourceTree = document.createElement("DIV");
         this.vDOMTree = document.createElement("DIV");
 
-        this.currentComponent = this.createComponent(this.currentRenderComponent, this.sourceTree, this.vDOMTree);
-        this.rootComponent=this.currentComponent;
+        if(this.rootComponent)
+            this.currentComponent=this.rootComponent;
+        else {
+            this.currentComponent = this.createComponent(this.currentRenderComponent, this.sourceTree, this.vDOMTree);
+            this.rootComponent=this.currentComponent;
+        }
+
         this.vDOMTree.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
         this.sourceTree.innerHTML = this.currentComponent.dataObject.template;
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
-        this.rootComponent.onCreate();
-
-        this.currentComponent = this.rootComponent as Component;
         this.componentStack = new Array<Component>();
         this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
     }
@@ -146,7 +152,7 @@ export default class Indigo {
 
     updateRDOMTree(){
 
-        if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
+    if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
         this.scheduleIntervalId=-1;
 
         this.resetEventListeners();
@@ -575,9 +581,8 @@ export default class Indigo {
 
                 this.pushComponent(component);
                 currentDest=this.parseRDOMTree(currentSrc, destElement, true, currentDest as HTMLElement);
-                this.popComponent();
-
                 (component as Component).onMount();
+                this.popComponent();
 
                 currentSrc = currentSrc.nextSibling as HTMLElement;
                 continue;
@@ -693,7 +698,6 @@ export default class Indigo {
             if(comp==component)return;
         }
 
-
         this.renderer.push(component);
 
         if(this.scheduleIntervalId!=-1) {
@@ -769,6 +773,11 @@ export default class Indigo {
 
                     this.currentComponent.modifyMode=false;
                 }
+            }
+            else
+            if(srcAttr.name.charAt(0)=="#"){
+                let name=this.camelCase(srcAttr.name.slice(1));
+                this.currentComponent.parent.dataObject[name]=this.currentComponent.dataObject;
             }
 
             //Обрабатываем обычный атрибут

@@ -13,7 +13,16 @@ export default function RouterLink(){ return {
     methods: {
 
         onMount() {
+            if(!this.parent || this.parent.name.toLowerCase()!="router-link-group")
+                throw Error("No router-link-block specified")
+
+            this.data.class=this.parent.data.class;
+            this.data.normalClass = this.parent.data.normalClass;
+            this.data.activeClass = this.parent.data.activeClass;
+            this.data.hoverClass = this.parent.data.hoverClass;
+
             this.methods.setClass();
+
         },
 
         onNavigate: function (e) {

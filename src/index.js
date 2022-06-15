@@ -6,6 +6,7 @@ import Basket from "./app/components/basket/basket"
 import Route from "./lib/indigo/router/route"
 import RouterLink from "./lib/indigo/router/router-link";
 import Home from "./app/components/home/home"
+import RouterLinkGroup from "./lib/indigo/router/router-link-group";
 
 let indigo=new Indigo();
 indigo.component("app", App);
@@ -14,4 +15,5 @@ indigo.component("home", Home);
 indigo.component("basket", Basket);
 indigo.component("route", Route);
 indigo.component("router-link", RouterLink);
+indigo.component("router-link-group", RouterLinkGroup);
 indigo.render(document.querySelector("#app"), "app");
