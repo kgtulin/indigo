@@ -1,0 +1,17 @@
+<div style="display:flex; width:700px; align-items: start">
+    <div style="flex-grow:1; margin:5px">
+        <img :src="props.item.ware.image" width="100px">
+    </div>
+
+    <div style="flex-grow:4; width:200px; margin:5px">
+        {{props.item.ware.title}}
+    </div>
+    <div style="flex-grow:1; margin:5px"><b>{{props.item.ware.price}} руб</b></div>
+
+    <div style="flex-grow:1; margin:5px;">
+        <input type="number" :value="props.item.count" #input-ref style="width:50px"><button #button-ref @click="onCountChange">Ok</button>
+    </div>
+    <div style="flex-grow:1; margin:5px;">
+        <button @click="onDelete" styel="color:red">X</button>
+    </div>
+</div>

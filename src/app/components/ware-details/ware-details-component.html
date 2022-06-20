@@ -1,0 +1,16 @@
+<div style="display: flex">
+<div style="flex-grow: 1">
+    <img :src="ware.image" align="left" style="margin-right:10px" width="300px" :classes="state.classes"
+         @mouseover="onMouseOverImage"
+         @mouseout="onMouseOutImage"
+         @mousedown="onMouseDownImage"
+         @mouseup="onMouseUpImage"
+    >
+
+     <b @mouseover="priceOver" @mouseout="priceOut" :styles="state.styles">{{ware.price}} руб.</b>
+    <button #button style="float:left; margin:5px;" @click="onAddToBasket">В корзину</button>
+</div>
+<div style="flex-grow: 2">
+    {{ware.text}}
+</div>
+</div>

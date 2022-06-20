@@ -19,7 +19,8 @@ function parseExpression(expression, startObject, namespace, debugString, contex
 
             if(typeof caller!="function")
                 throw Error("Error in call expression: the object is not a function ("+debugString+")")
-            return caller.apply(null, params);
+
+            return caller(...params);
 
         case "MemberExpression":
             let object=parseExpression(expression.object, startObject, namespace, debugString, context);
@@ -40,12 +41,11 @@ function parseExpression(expression, startObject, namespace, debugString, contex
             if(object==null || object==undefined || prop==null || prop==undefined)
                 throw Error("Error in member expression ("+debugString+")");
 
-            /*
              if(typeof object[prop]==="function") {
                  let func=object[prop];
-                 return (object[prop].bind(object))
+
+                 return (func.bind(object))
              }
-             */
 
             return object[prop];
 
@@ -58,7 +58,12 @@ function parseExpression(expression, startObject, namespace, debugString, contex
                 else
                 for (let i = namespace.length - 1; i >= 0; i--) {
                     let space = namespace[i];
-                    if (space.has(expression.name)) {
+
+                    if(space.get("") && space.get("")[expression.name]){ // "" представляет указатель this
+                        return(space.get("")[expression.name])
+                    }
+
+                    if (space.has(expression.name)){
                         return (space.get(expression.name));
                     }
                 }
@@ -76,6 +81,16 @@ function parseExpression(expression, startObject, namespace, debugString, contex
             return(startObject);
         }
 
+
+        case "ArrayExpression":
+            let items=Array();
+
+            for(let item of expression.elements){
+                context.firstPass=true;
+                items.push( parseExpression(item) );
+                context.firstPass=false;
+            }
+            return(items);
             
         case "ConditionalExpression":
 

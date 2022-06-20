@@ -1,6 +1,7 @@
-import Component from "./component";
+import IndigoComponent from "./indigo-component";
 import evalExpression from "../jsep/expressions";
 import Router from "./router/router";
+import {Child} from "../../test";
 
 class SwithStatus{
     public value: any;
@@ -14,9 +15,11 @@ class SwithStatus{
 
 class EventListener{
     type: string = "";
-    element: HTMLElement | null = null;
-    func: Function | null = null;
+    element: HTMLElement = null as unknown as HTMLElement;
+    func: Function = null as unknown as Function;
 }
+
+type RealComponent = IndigoComponent;
 
 export default class Indigo {
     static scheduleComponentInterval = 50;
@@ -25,9 +28,9 @@ export default class Indigo {
 
     private eventListeners: Array<EventListener> = Array();
 
-    private componentStack: Array<Component> = Array();
+    private componentStack: Array<RealComponent> = Array();
     private componentOutletStack: Array<ChildNode> = Array();
-    private currentComponentOutlet: ChildNode | null = null;
+    private currentComponentOutlet: ChildNode = null as unknown as ChildNode;
 
     private sourceTree: HTMLElement;
     private vDOMTree: HTMLElement;
@@ -36,28 +39,29 @@ export default class Indigo {
     private namespaceStack = Array<Map<String, Object>>();
 
     private filters: Map<String, Function> = new Map<String, Function>();
-    private installedComponents: Map<string, Function> = new Map();
+    private installedComponents: Map<string, RealComponent> = new Map();
 
-    private currentComponent: Component;
-    private rootComponent: Component | null = null;
+    private currentComponent: RealComponent;
+    private rootComponent: RealComponent = null as unknown as RealComponent;
 
     private scheduleIntervalId = -1;
 
-    private renderer = Array<Component>();
+    private renderer = Array<RealComponent>();
 
-    private rDOMTree: HTMLElement | null = null;
+    private rDOMTree: HTMLElement = null as unknown as HTMLElement;
     private currentRenderComponent: string = "";
 
     private switchStack = Array<SwithStatus>();
 
-    private componentCache = new Map<number, Component>();
+    private componentCache = new Map<number, RealComponent>();
     private cacheId = 0;
 
+    public modifyMode = false;
 
     constructor() {
         this.sourceTree = null as unknown as HTMLElement;
         this.vDOMTree = null as unknown as HTMLElement;
-        this.currentComponent = null as unknown as Component;
+        this.currentComponent = null as unknown as RealComponent;
         this.router = new Router(this);
     }
 
@@ -71,22 +75,23 @@ export default class Indigo {
         this.namespace = new Map<string, Object>();
         this.namespaceStack = Array<Map<String, Object>>();
 
-        this.currentComponent = null as unknown as Component;
+        this.currentComponent = null as unknown as RealComponent;
 
         this.scheduleIntervalId = -1;
 
-        this.renderer = Array<Component>();
+        this.renderer = Array<RealComponent>();
 
         this.switchStack = Array<SwithStatus>();
 
-        this.componentCache = new Map<number, Component>();
+        this.componentCache = new Map<number, RealComponent>();
         this.cacheId = 0;
-
-        this.rootComponent = null;
     }
 
 
     render(target: HTMLElement, componentName: string) {
+
+        this.modifyMode=true;
+
         if(this.scheduleIntervalId!=-1) {
             window.clearInterval(this.scheduleIntervalId);
         }
@@ -94,7 +99,7 @@ export default class Indigo {
         this.scheduleIntervalId=-1;
 
         if(this.rootComponent)
-            this.rootComponent.onDestroy();
+            this.rootComponent.destroy();
 
         this.resetAttributes();
 
@@ -108,58 +113,68 @@ export default class Indigo {
         this.rootComponent=this.currentComponent;
         this.vDOMTree.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
-        this.sourceTree.innerHTML = this.currentComponent.dataObject.template;
+        this.rootComponent.create();
+
+        this.sourceTree.innerHTML = this.currentComponent.getTemplate();
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
-        this.rootComponent.onCreate();
-
-        this.componentStack = new Array<Component>();
+        this.componentStack = new Array<RealComponent>();
 
         this.parseRDOMTree(this.vDOMTree, target, false, null as unknown as HTMLElement);
+
+        this.rootComponent.onMount();
+
+        this.modifyMode=false;
     }
 
 
     forceUpdate() {
+
+        this.modifyMode=true;
 
         if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
         this.scheduleIntervalId=-1;
 
         if(this.rootComponent)
             for(let item of this.rootComponent.children)
-                item.onDestroy();
+                item.destroy();
 
         this.resetAttributes();
 
         this.sourceTree = document.createElement("DIV");
         this.vDOMTree = document.createElement("DIV");
 
-        if(this.rootComponent)
-            this.currentComponent=this.rootComponent;
-        else {
-            this.currentComponent = this.createComponent(this.currentRenderComponent, this.sourceTree, this.vDOMTree);
-            this.rootComponent=this.currentComponent;
-        }
+        if(this.rootComponent==null)
+            throw Error("Error call forceUpdate before call render");
+        this.currentComponent=this.rootComponent as RealComponent;
 
         this.vDOMTree.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
-        this.sourceTree.innerHTML = this.currentComponent.dataObject.template;
+        this.sourceTree.innerHTML = this.currentComponent.getTemplate();
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
-        this.componentStack = new Array<Component>();
+        this.componentStack = new Array<RealComponent>();
         this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
+        this.rootComponent.onMount();
+
+        this.modifyMode=false;
     }
 
 
     updateRDOMTree(){
 
-    if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
-        this.scheduleIntervalId=-1;
+        this.modifyMode=true;
+
+        if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
+            this.scheduleIntervalId=-1;
 
         this.resetEventListeners();
-        this.currentComponent = this.rootComponent as Component;
-        this.componentStack = new Array<Component>();
+        this.currentComponent = this.rootComponent as RealComponent;
+        this.componentStack = new Array<RealComponent>();
 
         this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
+
+        this.modifyMode=false;
     }
 
 
@@ -174,6 +189,7 @@ export default class Indigo {
     }
 
     pushNamespace() {
+        this.namespace.set("", this.currentComponent)
         this.namespaceStack.push(this.namespace);
         this.namespace = new Map<string, Object>();
     }
@@ -182,14 +198,14 @@ export default class Indigo {
         this.namespace = this.namespaceStack.pop() as Map<string, Object>;
     }
 
-    pushComponent(component: Component | null = null) {
+    pushComponent(component: RealComponent = null as unknown as RealComponent) {
         this.componentStack.push(this.currentComponent);
         if (component)
             this.currentComponent = component;
     }
 
     popComponent() {
-        this.currentComponent = this.componentStack.pop() as Component;
+        this.currentComponent = this.componentStack.pop() as RealComponent;
     }
 
 
@@ -199,7 +215,7 @@ export default class Indigo {
         let filterRegexp = /{{[\n\r\t\x20]*(.+?)[\n\r\t\0x20]*\|[\n\r\t\0x20]*(.+)[\n\r\t\0x20]*}}/;
         let result = text;
 
-        let match: RegExpMatchArray | null = null;
+        let match: RegExpMatchArray  | null = null as unknown as RegExpMatchArray;
 
         while ((match = result.match(filterRegexp)) || (match = result.match(normalRegexp))) {
 
@@ -208,7 +224,7 @@ export default class Indigo {
                 let pars = match[1].trim();
                 let filter = (match[2]).trim();
 
-                let expressionText = this.evalExpression(pars, this.currentComponent.dataObject);
+                let expressionText = this.evalExpression(pars, this.currentComponent);
 
                 let func = this.getFilter(filter);
 
@@ -217,7 +233,7 @@ export default class Indigo {
             } else if (match.length == 2) {
 
                 let pars = match[1].trim();
-                let expressionText = this.evalExpression(pars, this.currentComponent.dataObject);
+                let expressionText = this.evalExpression(pars, this.currentComponent);
                 result = result.replace(normalRegexp, expressionText);
             }
         }
@@ -260,7 +276,7 @@ export default class Indigo {
         let testValue = false;
 
         if (testExpr)
-            testValue = this.evalExpression(testExpr, this.currentComponent.dataObject) as boolean;
+            testValue = this.evalExpression(testExpr, this.currentComponent) as boolean;
 
         if (testValue)
             this.parseVDOMTree(srcElement, destElement);
@@ -276,7 +292,7 @@ export default class Indigo {
         let testValue = false;
 
         if (expr)
-            testValue = this.evalExpression(expr, this.currentComponent.dataObject) as boolean;
+            testValue = this.evalExpression(expr, this.currentComponent) as boolean;
 
         if (!testValue)
             this.parseVDOMTree(srcElement, destElement);
@@ -292,7 +308,7 @@ export default class Indigo {
 
         if (result) {
 
-            let array = this.evalExpression(result[2], this.currentComponent.dataObject);
+            let array = this.evalExpression(result[2], this.currentComponent);
             let item = result[1];
             let value = null;
             let index = 0;
@@ -319,7 +335,7 @@ export default class Indigo {
         else
         if ((result = test.match(forInRegexp) as RegExpMatchArray)!=null) {
 
-            let array = this.evalExpression(result[2], this.currentComponent.dataObject);
+            let array = this.evalExpression(result[2], this.currentComponent);
             let item = result[1];
             let index = 0;
             let even = true;
@@ -347,7 +363,7 @@ export default class Indigo {
 
     parseWhile(srcElement: HTMLElement, destElement: HTMLElement) {
         let test: string = srcElement.getAttribute("test") as string;
-        let condition = this.evalExpression(test, this.currentComponent.dataObject);
+        let condition = this.evalExpression(test, this.currentComponent);
 
         let index = 0;
         let even = true;
@@ -373,7 +389,7 @@ export default class Indigo {
     parseSwitch(srcElement: HTMLElement, destElement: HTMLElement) {
         let expr = srcElement.getAttribute("test") as string;
 
-        let currentSwitchValue = this.evalExpression(expr, this.currentComponent.dataObject);
+        let currentSwitchValue = this.evalExpression(expr, this.currentComponent);
 
         this.switchStack.push(new SwithStatus(currentSwitchValue, false));
 
@@ -390,14 +406,14 @@ export default class Indigo {
 
         if (status.casePassed) return;
 
-        let value = srcElement.getAttribute("value") as string;
-        //let value=this.evalExpression(expr, this.currentComponent.dataObject);
+        //let value = srcElement.getAttribute("value") as string;
+        let expr=srcElement.getAttribute("value") as string;
+        let value=this.evalExpression(expr, this.currentComponent);
 
         if (value == status.value) {
             this.parseVDOMTree(srcElement, destElement);
             status.casePassed = true;
         }
-
     }
 
     parseDefault(srcElement: HTMLElement, destElement: HTMLElement) {
@@ -418,17 +434,11 @@ export default class Indigo {
         this.copyVDOMAttributes(currentSrcNode as HTMLElement, currentDestNode as HTMLElement);
         let tempDestNode = null;
 
-        this.currentComponent.onCreate();
-
-        //Обрабатывем элементы внутре тега компонента
-        //if (currentSrcNode.firstChild) {
-        //    tempDestNode = document.createElement("DIV");
-        //    this.parseVDOMTree(currentSrcNode, tempDestNode);
-        //}
+        this.currentComponent.create();
 
         //Готовим шаблон
         let srcTempNode = document.createElement(currentSrcNode.nodeName);
-        srcTempNode.innerHTML = this.currentComponent.dataObject.template;
+        srcTempNode.innerHTML = this.currentComponent.getTemplate();
 
         //Промсматриваем дерево  в глубь
         this.parseVDOMTree(srcTempNode, currentDestNode);
@@ -519,7 +529,7 @@ export default class Indigo {
     }
 
 
-    parseRDOMTreeItem(srcElement: HTMLElement, parentDestElement: HTMLElement, destElement: HTMLElement | null) {
+    parseRDOMTreeItem(srcElement: HTMLElement, parentDestElement: HTMLElement, destElement: HTMLElement) {
 
         switch(srcElement.nodeName.toLowerCase()){
             case "#text":
@@ -559,15 +569,17 @@ export default class Indigo {
 
     }
 
-    parseRDOMTree(srcElement: HTMLElement, destElement: HTMLElement, continueParse:boolean=false, tempElement: HTMLElement | null = null): HTMLElement {
+    parseRDOMTree(srcElement: HTMLElement, destElement: HTMLElement,
+                  continueParse:boolean=false,
+                  tempElement: HTMLElement = null as unknown as HTMLElement): HTMLElement {
 
-        let currentSrc = srcElement.firstChild as HTMLElement | null;
+        let currentSrc = srcElement.firstChild as HTMLElement;
         let currentDest;
 
         if(continueParse)
             currentDest=tempElement;
         else
-            currentDest=destElement.firstChild as HTMLElement | null;
+            currentDest=destElement.firstChild as HTMLElement;
 
         while (currentSrc) {
 
@@ -581,7 +593,7 @@ export default class Indigo {
 
                 this.pushComponent(component);
                 currentDest=this.parseRDOMTree(currentSrc, destElement, true, currentDest as HTMLElement);
-                (component as Component).onMount();
+                (component as RealComponent).onMount();
                 this.popComponent();
 
                 currentSrc = currentSrc.nextSibling as HTMLElement;
@@ -630,45 +642,46 @@ export default class Indigo {
     }
 
     //Вызывается при имзенении состояния компонента
-    renderComponent(component:Component)
+    renderComponent(component:RealComponent)
     {
+        if(this.modifyMode) return;
+
+        this.modifyMode=true;
         this.pushComponent(component);
 
         let tempDestNode;
 
         for(let item of component.children)
-            item.onDestroy();
+            item.destroy();
         component.children=Array();
-
-        //Рендерим то, что содержится внутри тела компонента
-        //(<component_name>_здесь_</component_name>
-        tempDestNode = document.createElement("DIV");
-        this.parseVDOMTree(component.baseElement, tempDestNode);
-
-        //Готовим стек для component-children.
-        //Данные будут доступны в шаблоне, в теге
-        //<component-children></component-children>
-        this.componentOutletStack.push(this.currentComponentOutlet as ChildNode);
-        this.currentComponentOutlet=tempDestNode;
 
         //Готовим компонент к рендеру
         let src=document.createElement(component.baseElement.nodeName);
         let dest=document.createElement(component.baseElement.nodeName); //component.currentElement;
-        src.innerHTML=component.dataObject.template;
+        src.innerHTML=component.getTemplate();
 
         //Рендерим компонент
         this.parseVDOMTree(src, dest);
         this.popComponent();
 
         //Вставляем компонент в дерево
-        (component.vDOMElement.parentNode as ParentNode).insertBefore(dest, component.vDOMElement);
-        this.copyVDOMAttributes(component.baseElement, dest);
+        if(component.vDOMElement.parentNode) {
+            (component.vDOMElement.parentNode as ParentNode).insertBefore(dest, component.vDOMElement);
+            this.copyVDOMAttributes(component.baseElement, dest);
 
-        component.vDOMElement.remove();
-        component.vDOMElement=dest;
-        component.vDOMElement.setAttribute("indigo-cache-id", component.id.toString());
+            component.vDOMElement.remove();
+            component.vDOMElement=dest;
+            component.vDOMElement.setAttribute("indigo-cache-id", component.id.toString());
+        }
+        else {
+            this.vDOMTree=dest;
+            this.vDOMTree.setAttribute("indigo-cache-id", component.id.toString());
+            component.vDOMElement=this.vDOMTree;
+        }
 
         this.updateRDOMTree();
+
+        this.modifyMode=false;
     }
 
 
@@ -689,13 +702,13 @@ export default class Indigo {
      *  Вызывается из компонента при каждом изменении объекта data и вложенных объектов
      */
 
-    scheduleComponentRender(component: Component)
+    scheduleComponentRender(component: RealComponent)
     {
         //Проверка, находится ли компонент или его родитель в очереди на рендер
         for(let i=0; i<this.renderer.length; i++){
             let comp=this.renderer[i];
-            if(component.hasParent(comp))return;
-            if(comp==component)return;
+            if(component.hasParent(comp))continue;
+            if(comp==component)continue;
         }
 
         this.renderer.push(component);
@@ -742,19 +755,17 @@ export default class Indigo {
             //Имя события, например mouseover
             //Имя события on-custom-event будет преобразовано в onCustomEvent
             if(srcAttr.name.charAt(0)=="@"){
-                //Событие для компонента. eventName - имя метода в секции methods текущего компонента
+                //Событие для компонента. eventName - имя метода в текущем компоненте
                 //srcAttr - функция в родительском компоненте, например methods.onCustomEvent
                 if(srcElement==this.currentComponent.baseElement){
 
                     let eventName=this.camelCase((srcAttr.name.slice(1)));
+                    const eventFunc=this.evalExpression(srcAttr.value, this.currentComponent.parent);
 
-                    const func=this.evalExpression(srcAttr.value, this.currentComponent.parent.dataObject);
+                    if(!eventFunc || typeof eventFunc != "function")
+                        throw Error(`Function "${this.currentComponent.name}.${srcAttr.value}"not found`);
 
-                    if(!this.currentComponent.dataObject.methods)
-                        this.currentComponent.dataObject.methods={};
-
-                    this.currentComponent.dataObject.methods[eventName]=func;
-
+                    (this as any).currentComponent.props[eventName]=eventFunc;
                 }
             }
             else
@@ -765,50 +776,86 @@ export default class Indigo {
                     let name=this.camelCase(srcAttr.name.slice(1));
                     let value=null;
 
-                    this.currentComponent.modifyMode=true;
+                    this.currentComponent.pushModified();
 
-                    value=this.evalExpression(srcAttr.value, this.currentComponent.parent.dataObject);
-                    let data=this.currentComponent.dataObject["data"];
-                    if(data[name]!==value) data[name]=value;
+                    value=this.evalExpression(srcAttr.value, this.currentComponent.parent);
+                    let props=(this as any).currentComponent.props;
+                    if(props[name]!==value) props[name]=value;
 
-                    this.currentComponent.modifyMode=false;
+                    this.currentComponent.popModified();
                 }
             }
             else
             if(srcAttr.name.charAt(0)=="#"){
                 let name=this.camelCase(srcAttr.name.slice(1));
-                this.currentComponent.parent.dataObject[name]=this.currentComponent.dataObject;
+                (this.currentComponent.parent as any).props[name]=this.currentComponent;
             }
 
             //Обрабатываем обычный атрибут
             let src = (srcElement.getAttributeNode(srcAttr.name) as Attr).cloneNode() as Attr;
-            src.value = srcAttr.value;
 
             let dest = src.cloneNode();
 
             dest.textContent = this.parseInterpolation(dest.textContent as string);
+
             destElement.setAttributeNode(dest as Attr);
         }
-
-
-
-
     }
 
 
     //Обрабатывает все что связано с событимя
     copyRDOMAttributes(srcElement: HTMLElement, destElement: HTMLElement)
     {
+        // Удаляем лишние атрибуты (атрибуты которых нет в VDOM)
+        for(let i=0; i<destElement.attributes.length; i++){
+
+            let attr = destElement.attributes[i];
+            let char=attr.name.charAt(0);
+
+            //удаляем в том числе служебные атрибуты
+            if(char=="@" || char==":" || char=="#" || !srcElement.hasAttribute(attr.name) || attr.name==":classes" || attr.name==":styles")
+                destElement.removeAttribute(attr.name);
+        }
+
         //Копируем атрибуты в получателя
         for(let i=0; i<srcElement.attributes.length; i++){
 
             let srcAttr=srcElement.attributes[i];
             let char=srcAttr.name.charAt(0);
 
+            //Обрабатываем классы
+            if(srcAttr.name==":classes"){
+                let classes = this.evalExpression(srcAttr.value, this.currentComponent);
+
+                //Удаляем классы из элемента
+                for(let item in classes)
+                    destElement.classList.remove(item);
+
+                //Устанавливаем значения классов на основе переданной карты {class1: boolean, class2: boolean...}
+                for(let item in classes){
+                    if(classes[item]){
+                        destElement.classList.add(item);
+                    }
+                }
+            }
+            else
+            if(srcAttr.name==":styles"){
+                let style = this.evalExpression(srcAttr.value, this.currentComponent);
+
+                for(let name in style){
+                    destElement.style[name as any]=style[name];
+                }
+            }
+            else
             //Обрабатываем события
             if(char=="@"){
                 let eventName=this.camelCase((srcAttr.name.slice(1))); //Имя события, mouse-over преобразуется в mouseOver
-                let eventFunc=this.currentComponent.dataObject.methods[srcAttr.value];
+
+                const func=this.evalExpression(srcAttr.value, this.currentComponent);
+
+                let eventFunc=func;
+                if(typeof eventFunc!="function")
+                    throw Error(`Event handler ${this.currentComponent.name}.${srcAttr.value} is not a function`);
 
                 destElement.addEventListener(eventName, eventFunc);
 
@@ -825,52 +872,27 @@ export default class Indigo {
                 let value=null;
 
                 //Обычная привязка к атрибуту элемента
-                value=this.evalExpression(srcAttr.value, this.currentComponent.dataObject);
-                if(destElement.getAttribute(name)!==value)
+                value=this.evalExpression(srcAttr.value, this.currentComponent);
+                if(destElement.getAttribute(name)!=value)
                     destElement.setAttribute(name, value);
             }
             else
-            if(srcAttr.name.charAt(0)=="#"){
-
+            if(char=="#"){
                 //Создаем ссылку на HTML элемент и помащаем ее в пространство имен
-                let name=srcAttr.name.slice(1)
+                let name=this.camelCase(srcAttr.name.slice(1));
                 this.namespace.set(name, destElement);
-                this.currentComponent.dataObject[name]=destElement;
+                (this as any).currentComponent.props[name]=destElement;
             }
             else{
-
                 //Обрабатываем обычный атрибут
                 let src=(srcElement.getAttributeNode(srcAttr.name) as Node).cloneNode() as Attr;
-                src.value=srcAttr.value;
+                if(src.name=="indigo-cache-id")continue;
 
-                let dest=src.cloneNode();
+                if(destElement.getAttribute(src.name)==src.value) continue;
+                let dest=src.cloneNode() as Attr;
+                dest.value=src.value;
 
-                dest.textContent=this.parseInterpolation(dest.textContent as string);
                 destElement.setAttributeNode(dest as Attr);
-            }
-
-            // Удаляем лишние атрибуты (атрибуты которых нет в VDOM)
-            for(let i=0; i<destElement.attributes.length; i++){
-
-                let attr = destElement.attributes[i];
-                let char=attr.name.charAt(0);
-
-                //удаляем в том числе служебные атрибуты
-                if(char=="@" || char==":" || char=="#" || !srcElement.hasAttribute(attr.name))
-                    destElement.removeAttribute(attr.name);
-            }
-
-            // Устанавливаем атрибуты
-            for(let i=0; i<srcElement.attributes.length; i++){
-                let attr=srcElement.attributes[i];
-                let char=attr.name.charAt(0);
-
-                // пропускаем служебные атрибуты
-                if(char=="@" || char==":" || char=="#" || attr.name=="indigo-cache-id")continue;
-
-                if(!destElement.hasAttribute(attr.name) || destElement.getAttribute(attr.name)!=attr.value) {
-                    destElement.setAttribute(attr.name, attr.value);
-                }
             }
         }
     }
@@ -886,21 +908,22 @@ export default class Indigo {
         return(this.installedComponents.has(name.toLowerCase()));
     }
 
-    getComponent(name:string): Function{
+    getComponent(name:string): RealComponent{
         if(!this.checkComponent(name.toLowerCase()))
             throw(Error(`Component ${name} not found`));
 
-        return( this.installedComponents.get(name.toLowerCase()) as Function );
+        return( this.installedComponents.get(name.toLowerCase()) as RealComponent);
     }
 
-    //Создает обертку вокруг dataObject
+    //Создает компонент
     createComponent(name : string, baseNode:ChildNode, vDOMNode:ChildNode){
         const func = this.getComponent(name);
 
-        let dataObj=func();
+        if(!func || typeof(func)!="function")
+            throw Error("Can not create component \""+name+"\"");
 
-        // srcElement используется исключительно в renderComponent
-        let result=new Component(this.cacheId, name, baseNode as HTMLElement, vDOMNode as HTMLElement, dataObj, this.currentComponent, this);
+        let result=new (func as any)(this.cacheId, name, baseNode as HTMLElement, vDOMNode as HTMLElement, this.currentComponent, this);
+
         this.componentCache.set(result.id, result);
         this.cacheId++;
 
@@ -909,7 +932,7 @@ export default class Indigo {
 
     //Регистрирует компонент в Indigo.
     //В качестве компонента передается фабричная функция.
-    component(name:string, component:Function){
+    component(name:string, component:RealComponent){
         this.installedComponents.set(name, component);
     }
 

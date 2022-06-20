@@ -1,0 +1,26 @@
+<div>
+    <router-link-group :normal-class="css['normal']" :active-class="css['active']" :hover-class="css['hover']">
+        <router-link :url="'/'" :title="'Каталог'">Home</router-link>
+        <router-link :url="'/basket'" :title="'Корзина'">Basket ({{provider("basket").getTotalSumm()}} руб.)</router-link>
+    </router-link-group>
+</div>
+<hr/>
+
+<i-if test="state.shopLoaded && state.basketLoaded">
+    <route :url="'/'" :title="'Каталог'">
+        <div>
+            <shop :basket="provider('basket')" :shop="provider('shop')"></shop>
+        </div>
+    </route>
+    <route :url="'/basket'" :title="'Корзина'">
+        <div>
+            <basket :basket="this.provider('basket')")></basket>
+        </div>
+    </route>
+    <route :url="'/ware/:id'" title="Товар">
+        <ware-details :shop="provider('shop')"></ware-details>
+    </route>
+</i-if>
+<i-else>
+    Loading...
+</i-else>

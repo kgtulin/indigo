@@ -1,0 +1,5 @@
+<h1>Корзина</h1>
+<i-for test="item of props.basket.getItems()">
+    <basket-item :basket="props.basket" :item="item"></basket-item>
+</i-for>
+<div>ИТОГО: {{props.basket.getTotalSumm()}} руб.</div>
