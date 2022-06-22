@@ -91,48 +91,6 @@ export default class IndigoComponent {
         self.consume = new Proxy((this as any).consume, handler as Object);
     }
 
-    /*
-        prepareConsume(providers:any, consume:any){
-
-            if(!providers || !consume) return;
-
-            for(let item in providers){
-                if(typeof consume[item] == "object"){
-                    consume[item]=providers[item];
-                }
-            }
-
-            for(let item of this.children){
-                this.prepareConsume(providers, item);
-            }
-        }
-
-
-
-        prepareProviders() {
-            const handler = {
-
-                set: (target: any, key: string, value: any) => {
-
-                    if (target[key] === value) return (true);
-
-                    target[key] = value;
-                    for(let item of this.children){
-                        this.prepareConsume((this as any).providers, item);
-                    }
-                    return (true);
-                }
-            }
-
-            //Устанавливаем обработчик изменения провайдера
-            for(let item of this.children){
-                this.prepareConsume((this as any).providers, item)
-            }
-
-            let self=this as any;
-            self.providers = new Proxy((this as any).providers, handler as Object);
-        }
-    */
 
     provider = (name:string)=>{
         let current = this as any;
@@ -164,6 +122,21 @@ export default class IndigoComponent {
 
         if((this as any)['consume']) {
             this.prepareConsume();
+        }
+
+        //Расширям пропсы добавлением родительских данных
+        let current=this.parent;
+        while(current){
+            for(let item in current.props){
+
+                let parentProps=current.props as any;
+                let thisProps=this.props as any;
+
+                if(thisProps[item]==undefined)
+                    thisProps[item]=parentProps[item];
+            }
+
+            current=current.parent;
         }
 
         this.onCreate();

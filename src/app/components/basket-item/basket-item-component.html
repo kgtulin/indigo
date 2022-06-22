@@ -4,12 +4,19 @@
     </div>
 
     <div style="flex-grow:4; width:200px; margin:5px">
-        {{props.item.ware.title}}
+        <router-link :item="props.item"
+                     :normal-class="css['normal']"
+                     :active-class="css['active']"
+                     :hover-class="css['hover']" :url="'/ware/'+props.item.ware.id" :title="'Каталог'">
+            {{props.item.ware.title}}</router-link>
     </div>
-    <div style="flex-grow:1; margin:5px"><b>{{props.item.ware.price}} руб</b></div>
+    <div style="flex-grow:1; margin:5px;flex-basis:150px"><b>{{props.item.ware.price}} руб</b></div>
 
     <div style="flex-grow:1; margin:5px;">
         <input type="number" :value="props.item.count" #input-ref style="width:50px"><button #button-ref @click="onCountChange">Ok</button>
+    </div>
+    <div style="flex-grow:1; margin:5px;">
+        <b>{{props.item.summ}}</b>
     </div>
     <div style="flex-grow:1; margin:5px;">
         <button @click="onDelete" styel="color:red">X</button>
