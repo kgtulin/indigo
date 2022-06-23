@@ -134,7 +134,7 @@ this.providers.testProvider2=new TestProvider2();
 
 # Методы и свойства компонентов
 
-## * router – объект управляющий роутингом
+## * router – объект управляющий роутингом 
 
 Содержит два метода: match(url:string, result: Map): Boolean – возвращает true  если переданный url  совпадает с текущим url страницы. Url  может содержать шаблоны, например: /forum /:theme_id/:message_id в этом случае в result (если он не null) будут записаны значения message_id  и theme_id и метод navigate(url:string) – метод перехода на другую страницу (см. раздел роутинг).
 
