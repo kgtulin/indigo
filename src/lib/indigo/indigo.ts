@@ -116,12 +116,12 @@ export default class Indigo {
         this.rootComponent.create();
 
         this.sourceTree.innerHTML = this.currentComponent.getTemplate();
+        this.rootComponent.onBeforeMount();
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
         this.componentStack = new Array<RealComponent>();
 
         this.parseRDOMTree(this.vDOMTree, target, false, null as unknown as HTMLElement);
-
         this.rootComponent.onMount();
 
         this.modifyMode=false;
@@ -150,6 +150,7 @@ export default class Indigo {
 
         this.vDOMTree.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
+        this.rootComponent.onBeforeMount();
         this.sourceTree.innerHTML = this.currentComponent.getTemplate();
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
@@ -163,6 +164,7 @@ export default class Indigo {
 
     updateRDOMTree(){
 
+        console.log(this.vDOMTree);
         this.modifyMode=true;
 
         if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);
@@ -437,6 +439,7 @@ export default class Indigo {
         this.currentComponent.create();
 
         //Готовим шаблон
+        this.currentComponent.onBeforeMount();
         let srcTempNode = document.createElement(currentSrcNode.nodeName);
         srcTempNode.innerHTML = this.currentComponent.getTemplate();
 
@@ -592,6 +595,9 @@ export default class Indigo {
                 let component=this.componentCache.get(componentId);
 
                 this.pushComponent(component);
+                this.currentComponent.onBeforeMount();
+
+                //Просматриваем дерево вглубь компонента
                 currentDest=this.parseRDOMTree(currentSrc, destElement, true, currentDest as HTMLElement);
                 (component as RealComponent).onMount();
                 this.popComponent();
@@ -603,8 +609,7 @@ export default class Indigo {
             if(currentDest){
                 // Типы узлов виртуального и реального дерева не совпадают,
                 // удаляем начиная с отличающегося узла
-                const nodeName = currentSrc.nodeName.toLowerCase();
-                if (currentDest && currentDest.nodeName != currentSrc.nodeName) {
+                if (currentDest && currentDest.nodeName.toLowerCase() != currentSrc.nodeName.toLowerCase()) {
                     while (currentDest) {
 
                         let elem = currentDest;
@@ -616,6 +621,7 @@ export default class Indigo {
                 }
             }
 
+            //Создаем новый узел
             this.parseRDOMTreeItem(currentSrc, destElement, currentDest as HTMLElement);
 
             currentSrc = (currentSrc as ChildNode).nextSibling as HTMLElement;
@@ -624,8 +630,8 @@ export default class Indigo {
                 currentDest = currentDest.nextSibling as HTMLElement;
         }
 
-        // В узле реального дерева болше элементов чем в виртуальном дереве, удаляем лигнее
-        if(currentDest && !srcElement.hasAttribute("indigo-cache-id")){
+        // В узле реального дерева болше элементов чем в виртуальном дереве, удаляем лишнее
+        if(currentDest /*&& !srcElement.hasAttribute("indigo-cache-id")*/){
 
             let destNodes = new Array<HTMLElement>()
 
@@ -638,7 +644,7 @@ export default class Indigo {
                 item.remove();
         }
 
-        return(currentDest as HTMLElement);
+        return(currentDest as unknown as HTMLElement);
     }
 
     //Вызывается при имзенении состояния компонента
@@ -659,6 +665,7 @@ export default class Indigo {
         let src=document.createElement(component.baseElement.nodeName);
         let dest=document.createElement(component.baseElement.nodeName); //component.currentElement;
         src.innerHTML=component.getTemplate();
+        component.onBeforeMount();
 
         //Рендерим компонент
         this.parseVDOMTree(src, dest);
@@ -765,6 +772,7 @@ export default class Indigo {
                     if(!eventFunc || typeof eventFunc != "function")
                         throw Error(`Function "${this.currentComponent.name}.${srcAttr.value}"not found`);
 
+                    if(!this.currentComponent.props) this.currentComponent.props={};
                     (this as any).currentComponent.props[eventName]=eventFunc;
                 }
             }
@@ -779,8 +787,11 @@ export default class Indigo {
                     this.currentComponent.pushModified();
 
                     value=this.evalExpression(srcAttr.value, this.currentComponent.parent);
+                    if(!this.currentComponent.props)
+                        this.currentComponent["props"] = {};
+
                     let props=(this as any).currentComponent.props;
-                    if(props[name]!==value) props[name]=value;
+                    if(props[name]!=value) props[name]=value;
 
                     this.currentComponent.popModified();
                 }
@@ -788,6 +799,7 @@ export default class Indigo {
             else
             if(srcAttr.name.charAt(0)=="#"){
                 let name=this.camelCase(srcAttr.name.slice(1));
+                if(!this.currentComponent.props) this.currentComponent.props={};
                 (this.currentComponent.parent as any).props[name]=this.currentComponent;
             }
 

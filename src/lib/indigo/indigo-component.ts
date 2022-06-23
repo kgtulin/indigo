@@ -73,24 +73,11 @@ export default class IndigoComponent {
     }
 
 
-    setState(state: any){
+    setState=(state: any)=>{
         let modif=this.ExtendState((this as any).state, state);
         if(modif)
             this.forceUpdate();
     }
-
-
-    prepareConsume(){
-        const handler = {
-            get: (target: any, key: string) => {
-                return this.provider(key);
-            }
-        }
-
-        let self=this as any;
-        self.consume = new Proxy((this as any).consume, handler as Object);
-    }
-
 
     provider = (name:string)=>{
         let current = this as any;
@@ -110,7 +97,7 @@ export default class IndigoComponent {
     }
 
 
-    forceUpdate(){
+    forceUpdate=()=>{
         if(this.modified())return;
 
         this.pushModified();
@@ -119,10 +106,6 @@ export default class IndigoComponent {
     }
 
     create(){
-
-        if((this as any)['consume']) {
-            this.prepareConsume();
-        }
 
         //Расширям пропсы добавлением родительских данных
         let current=this.parent;
@@ -172,6 +155,9 @@ export default class IndigoComponent {
     }
 
     onDestroy(){
+    }
+
+    onBeforeMount(){
     }
 
     onMount(){

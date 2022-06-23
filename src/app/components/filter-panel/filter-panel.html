@@ -1,0 +1,5 @@
+<input type="text" #input @input="changeText" :value="props.text">
+
+<button @click="props.toggleAll" :styles="this.getAllStyle()">all</button>
+<button @click="props.toggleDone" :styles="this.getDoneStyle()">done</button>
+<button @click="props.toggleImportant" :styles="getImportantStyle()">imp</button>

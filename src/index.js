@@ -1,23 +1,24 @@
 import "./styles.css"
 import Indigo from "./lib/indigo/indigo"
-import AppComponent from "./app/components/app/app-component"
-import ShopComponent from "./app/components/shop/shop-component"
-import BasketComponent from "./app/components/basket/basket-component"
-import WareComponent from "./app/components/ware/ware-component";
+
+import AppComponent from "./app/components/app/app"
+import FilterPanel from "./app/components/filter-panel/filter-panel";
+import Summary from "./app/components/summary/summary";
+import AddTaskForm from "./app/components/add-task-form/add-task-form";
+import Task from "./app/components/task/task";
+
 import Route from "./lib/indigo/router/route"
 import RouterLink from "./lib/indigo/router/router-link";
 import RouterLinkGroup from "./lib/indigo/router/router-link-group";
-import BasketItemComponent from "./app/components/basket-item/basket-item-component";
-import WareDetailsComponent from "./app/components/ware-details/ware-details-component"
 
 
 let indigo=new Indigo();
 indigo.component("app", AppComponent);
-indigo.component("shop", ShopComponent);
-indigo.component("basket", BasketComponent);
-indigo.component("ware", WareComponent)
-indigo.component("ware-details", WareDetailsComponent)
-indigo.component("basket-item", BasketItemComponent)
+indigo.component("add-task-form", AddTaskForm);
+indigo.component("filter-panel", FilterPanel);
+indigo.component("summary", Summary);
+indigo.component("task", Task);
+
 indigo.component("route", Route);
 indigo.component("router-link", RouterLink);
 indigo.component("router-link-group", RouterLinkGroup);

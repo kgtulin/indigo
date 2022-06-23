@@ -1,0 +1,30 @@
+<i-if test="state.loading">
+    Loading...
+</i-if>
+<i-else>
+
+    <summary
+            :total="summary.total"
+            :done="summary.done"
+            :important="summary.important">
+    </summary>
+
+    <filter-panel
+            :text="state.filter"
+            :done="state.done"
+            :important="state.important"
+            :all="state.all"
+            :change-text="changeFilter"
+            :toggle-done="toggleDone"
+            :toggle-important="toggleImportant"
+            :toggle-all="toggleAll"
+    >
+    </filter-panel>
+
+
+    <i-for test="item of currentItems">
+        <task :data-source="dataSource" :item="item"></task>
+    </i-for>
+
+    <add-task-form :data-source="dataSource"></add-task-form>
+</i-else>
