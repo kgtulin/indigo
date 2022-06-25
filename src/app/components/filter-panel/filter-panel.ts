@@ -16,6 +16,7 @@ type Props = {
 
 export default class FilterPanel extends IndigoComponent{
     props: Props = null as unknown as Props
+    css=css;
 
     getTemplate(): string {
         return template;
@@ -23,7 +24,10 @@ export default class FilterPanel extends IndigoComponent{
 
     getDoneStyle=()=>{
         if(this.props.done)
-            return {backgroundColor:"blue"}
+            return {
+                backgroundColor:"blue",
+                color:"white"
+        }
         else
             return {}
     }
@@ -31,7 +35,10 @@ export default class FilterPanel extends IndigoComponent{
     getImportantStyle=()=>{
 
         if(this.props.important)
-            return {backgroundColor:"blue"}
+            return {
+                backgroundColor:"blue",
+                color: "white"
+        }
         else
             return {}
     }
@@ -39,7 +46,10 @@ export default class FilterPanel extends IndigoComponent{
     getAllStyle=()=>{
 
         if(this.props.all)
-            return {backgroundColor:"blue"}
+            return {
+                backgroundColor:"blue",
+                color:"white"
+        }
         else
             return {}
     }

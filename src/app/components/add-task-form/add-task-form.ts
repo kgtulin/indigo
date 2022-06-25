@@ -7,6 +7,7 @@ let css=require("./add-task-form.css").default
 type Props={dataSource: DataSource, input: HTMLInputElement}
 
 export default class AddTaskForm extends IndigoComponent{
+    css=css;
 
     props: Props=null as unknown as Props;
 

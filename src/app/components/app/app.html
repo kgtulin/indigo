@@ -3,28 +3,38 @@
 </i-if>
 <i-else>
 
-    <summary
-            :total="summary.total"
-            :done="summary.done"
-            :important="summary.important">
-    </summary>
+    <div class="{{css['flex']}}">
+        <div class="{{css['flex-left']}}">&nbsp;&nbsp;</div>
 
-    <filter-panel
-            :text="state.filter"
-            :done="state.done"
-            :important="state.important"
-            :all="state.all"
-            :change-text="changeFilter"
-            :toggle-done="toggleDone"
-            :toggle-important="toggleImportant"
-            :toggle-all="toggleAll"
-    >
-    </filter-panel>
+        <div :class="css['flex-center']" style="justify-content: center">
+            <summary
+                    :total="summary.total"
+                    :done="summary.done"
+                    :important="summary.important">
+            </summary>
 
+            <filter-panel
+                    :text="state.filter"
+                    :done="state.done"
+                    :important="state.important"
+                    :all="state.all"
+                    :change-text="changeFilter"
+                    :toggle-done="toggleDone"
+                    :toggle-important="toggleImportant"
+                    :toggle-all="toggleAll"
+            >
+            </filter-panel>
+            <hr/>
 
-    <i-for test="item of currentItems">
-        <task :data-source="dataSource" :item="item"></task>
-    </i-for>
+            <div class="{{css['grid']}}">
+                <i-for test="item of currentItems">
+                    <task :data-source="dataSource" :item="item"></task>
+                </i-for>
+            </div>
+            <hr/>
+            <add-task-form :data-source="dataSource"></add-task-form>
+        </div>
+        <div class="{{css['flex-right']}}">&nbsp;</div>
 
-    <add-task-form :data-source="dataSource"></add-task-form>
+    </div>
 </i-else>

@@ -9,6 +9,8 @@ type Props={item: TaskItemData, dataSource: DataSource}
 
 export default class Task extends IndigoComponent{
 
+    css=css;
+
     state: State = {
         important: false,
         done: false
@@ -35,6 +37,7 @@ export default class Task extends IndigoComponent{
 
     delete=(e:Event)=>{
         e.preventDefault();
+        if(confirm("Действительно удалить задачу \""+this.props.item.title+"\""))
         this.props.dataSource.deleteItem(this.props.item.id);
     }
 

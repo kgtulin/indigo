@@ -1,0 +1,4 @@
+.flex {display:flex;}
+.input {flex-grow: 2}
+.input input {width:100%;  margin-right:0.4em}
+.btn-group { display:flex; justify-content: flex-end; margin-left:0.6em;}

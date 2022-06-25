@@ -164,7 +164,6 @@ export default class Indigo {
 
     updateRDOMTree(){
 
-        console.log(this.vDOMTree);
         this.modifyMode=true;
 
         if(this.scheduleIntervalId!=-1) window.clearInterval(this.scheduleIntervalId);

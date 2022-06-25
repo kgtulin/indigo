@@ -25,7 +25,7 @@ export default class DataSource {
             setTimeout(() => {
                 callback();
                 resolve(this)
-            }, 500);
+            }, 200);
         }))
     }
 

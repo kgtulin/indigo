@@ -1,0 +1,7 @@
+.title {grid-column: 1/2}
+.buttons {
+    grid-column: 2/3;
+    display:flex;
+    justify-content: flex-end;
+    width: 5em;
+}

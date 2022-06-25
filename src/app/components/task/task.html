@@ -1,7 +1,13 @@
-<div>
+<div :class="css['title']">
     <a href="#" @click="toggleDone" :styles="getStyles()">
         {{props.item.title}}
     </a>
-    <button @click="toggleImportant">imp</button>
-    <button @click="delete">del</button>
+</div>
+<div :class="css['buttons']">
+    <div>
+        <button title="Важное" @click="toggleImportant">imp</button>
+    </div>
+    <div>
+        <button title="Удалить" @click="delete">del</button>
+    </div>
 </div>

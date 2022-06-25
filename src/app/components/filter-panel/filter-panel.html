@@ -1,5 +1,11 @@
-<input type="text" #input @input="changeText" :value="props.text">
-
-<button @click="props.toggleAll" :styles="this.getAllStyle()">all</button>
-<button @click="props.toggleDone" :styles="this.getDoneStyle()">done</button>
-<button @click="props.toggleImportant" :styles="getImportantStyle()">imp</button>
+<div><b>Поиск:</b></div>
+<div class="{{css['flex']}}">
+    <div class="{{css['input']}}">
+        <input type="text" #input @input="changeText" :value="props.text">
+    </div>
+    <div class="{{css['btn-group']}}">
+            <button @click="props.toggleAll" title="Все" :styles="this.getAllStyle()">all</button>
+            <button @click="props.toggleDone" title="Завершенные" :styles="this.getDoneStyle()">done</button>
+            <button @click="props.toggleImportant" title="Важные" :styles="getImportantStyle()">imp</button>
+    </div>
+</div>

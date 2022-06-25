@@ -9,6 +9,7 @@ type State={filter:string, important:boolean, done:boolean, loading: boolean, al
 type TSummary={total:number, done: number, important:number}
 
 export default class App extends IndigoComponent{
+    css=css;
     dataSource: DataSource = null as unknown as DataSource;
     summary: TSummary = null as unknown as TSummary;
     currentItems=Array<TaskItemData>();

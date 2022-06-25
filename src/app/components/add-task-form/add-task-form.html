@@ -1,4 +1,8 @@
-<div>
-    <input type="text" #input>
-    <button @click="onAddItem">add</button>
+<div :class="css['flex']">
+    <div class="{{css['input']}}">
+        <input type="text" #input>
+    </div>
+    <div class="{{css['button']}}">
+        <button @click="onAddItem">add</button>
+    </div>
 </div>
