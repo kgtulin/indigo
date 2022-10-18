@@ -1,4 +1,5 @@
 <div :class="css['title']">
+    <component-children></component-children>
     <a href="#" @click="toggleDone" :styles="getStyles()">
         {{props.item.title}}
     </a>

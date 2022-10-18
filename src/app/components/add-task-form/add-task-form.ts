@@ -13,6 +13,7 @@ export default class AddTaskForm extends IndigoComponent{
 
     onAddItem=()=>{
         this.props.dataSource.addItem(this.props.input.value);
+        this.props.input.value="";
     }
 
 
