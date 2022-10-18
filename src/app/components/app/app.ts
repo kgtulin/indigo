@@ -5,16 +5,16 @@ import {TaskItemData} from "../../model/data-source";
 let template=require("./app.html").default;
 let css=require("./app.css").default;
 
-type State={filter:string, important:boolean, done:boolean, loading: boolean, all:boolean}
+//type State={filter:string, important:boolean, done:boolean, loading: boolean, all:boolean}
 type TSummary={total:number, done: number, important:number}
 
 export default class App extends IndigoComponent{
     css=css;
     dataSource: DataSource = null as unknown as DataSource;
-    summary: TSummary = null as unknown as TSummary;
+    summary: TSummary = null;
     currentItems=Array<TaskItemData>();
 
-    state: State = {
+    state = {
         filter: "",
         important: false,
         done: false,
@@ -49,15 +49,15 @@ export default class App extends IndigoComponent{
 
     toggleDone=()=>{
         if(this.state.done==false) {
-            this.setState({done: !this.state.done, all:false});
+            this.setState({done: true, important:false, all:false});
         }
         else {
             if (this.state.important == false) {
-                this.setState({done: !this.state.done, all: true});
+                this.setState({done: false, all: true});
                 return;
             }
 
-            this.setState({done: !this.state.done, all:false});
+            this.setState({done: false, all:false});
         }
     }
 
@@ -70,13 +70,13 @@ export default class App extends IndigoComponent{
     toggleImportant=()=>{
 
         if(this.state.important==false)
-            this.setState({important:!this.state.important, all:false});
+            this.setState({done: false, important:true, all:false});
         else {
             if (this.state.done == false) {
-                this.setState({important: !this.state.important, all: true});
+                this.setState({done: false, important: false, all: true});
                 return;
             }
-            this.setState({important: !this.state.important, all: false});
+            this.setState({important: true, all: false});
         }
     }
 

@@ -1,7 +1,6 @@
 import IndigoComponent from "./indigo-component";
 import evalExpression from "../jsep/expressions";
 import Router from "./router/router";
-import {Child} from "../../test";
 
 class SwithStatus{
     public value: any;
@@ -15,8 +14,8 @@ class SwithStatus{
 
 class EventListener{
     type: string = "";
-    element: HTMLElement = null as unknown as HTMLElement;
-    func: Function = null as unknown as Function;
+    element: HTMLElement = null;
+    func: Function = null;
 }
 
 type RealComponent = IndigoComponent;
@@ -30,7 +29,7 @@ export default class Indigo {
 
     private componentStack: Array<RealComponent> = Array();
     private componentOutletStack: Array<ChildNode> = Array();
-    private currentComponentOutlet: ChildNode = null as unknown as ChildNode;
+    private currentComponentOutlet: ChildNode = null;
 
     private sourceTree: HTMLElement;
     private vDOMTree: HTMLElement;
@@ -42,13 +41,13 @@ export default class Indigo {
     private installedComponents: Map<string, RealComponent> = new Map();
 
     private currentComponent: RealComponent;
-    private rootComponent: RealComponent = null as unknown as RealComponent;
+    private rootComponent: RealComponent = null;
 
     private scheduleIntervalId = -1;
 
     private renderer = Array<RealComponent>();
 
-    private rDOMTree: HTMLElement = null as unknown as HTMLElement;
+    private rDOMTree: HTMLElement = null;
     private currentRenderComponent: string = "";
 
     private switchStack = Array<SwithStatus>();
@@ -59,9 +58,9 @@ export default class Indigo {
     public modifyMode = false;
 
     constructor() {
-        this.sourceTree = null as unknown as HTMLElement;
-        this.vDOMTree = null as unknown as HTMLElement;
-        this.currentComponent = null as unknown as RealComponent;
+        this.sourceTree = null;
+        this.vDOMTree = null;
+        this.currentComponent = null;
         this.router = new Router(this);
     }
 
@@ -75,7 +74,7 @@ export default class Indigo {
         this.namespace = new Map<string, Object>();
         this.namespaceStack = Array<Map<String, Object>>();
 
-        this.currentComponent = null as unknown as RealComponent;
+        this.currentComponent = null;
 
         this.scheduleIntervalId = -1;
 
@@ -121,7 +120,7 @@ export default class Indigo {
 
         this.componentStack = new Array<RealComponent>();
 
-        this.parseRDOMTree(this.vDOMTree, target, false, null as unknown as HTMLElement);
+        this.parseRDOMTree(this.vDOMTree, target, false, null);
         this.rootComponent.onMount();
 
         this.modifyMode=false;
@@ -151,11 +150,11 @@ export default class Indigo {
         this.vDOMTree.setAttribute("indigo-cache-id", this.currentComponent.id.toString());
 
         this.rootComponent.onBeforeMount();
-        this.sourceTree.innerHTML = this.currentComponent.getTemplate();
+        this.sourceTree.innerHTML = this.rootComponent.getTemplate();
         this.parseVDOMTree(this.sourceTree, this.vDOMTree);
 
         this.componentStack = new Array<RealComponent>();
-        this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
+        this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null);
         this.rootComponent.onMount();
 
         this.modifyMode=false;
@@ -173,7 +172,7 @@ export default class Indigo {
         this.currentComponent = this.rootComponent as RealComponent;
         this.componentStack = new Array<RealComponent>();
 
-        this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null as unknown as HTMLElement);
+        this.parseRDOMTree(this.vDOMTree, this.rDOMTree as HTMLElement, false, null);
 
         this.modifyMode=false;
     }
@@ -199,7 +198,7 @@ export default class Indigo {
         this.namespace = this.namespaceStack.pop() as Map<string, Object>;
     }
 
-    pushComponent(component: RealComponent = null as unknown as RealComponent) {
+    pushComponent(component: RealComponent = null) {
         this.componentStack.push(this.currentComponent);
         if (component)
             this.currentComponent = component;
@@ -216,7 +215,7 @@ export default class Indigo {
         let filterRegexp = /{{[\n\r\t\x20]*(.+?)[\n\r\t\0x20]*\|[\n\r\t\0x20]*(.+)[\n\r\t\0x20]*}}/;
         let result = text;
 
-        let match: RegExpMatchArray  | null = null as unknown as RegExpMatchArray;
+        let match: RegExpMatchArray = null;
 
         while ((match = result.match(filterRegexp)) || (match = result.match(normalRegexp))) {
 
@@ -530,7 +529,6 @@ export default class Indigo {
         this.popNamespace();
     }
 
-
     parseRDOMTreeItem(srcElement: HTMLElement, parentDestElement: HTMLElement, destElement: HTMLElement) {
 
         switch(srcElement.nodeName.toLowerCase()){
@@ -565,15 +563,20 @@ export default class Indigo {
                 }
 
                 this.copyRDOMAttributes(srcElement, destElement as HTMLElement);
-                this.parseRDOMTree(srcElement, destElement, false, null as unknown as HTMLElement);
+                this.parseRDOMTree(srcElement, destElement, false, null as HTMLElement);
 
         }
 
     }
 
+    //srcElement - узел в виртуальном DOM
+    //destElement -  узел в реальном DOM
+    //continueParse - продолжать сопоставлять дерево с указанного в tempElement узла
+    //tempElement - текущий узел в реальном DOM
+    //currentDest -
     parseRDOMTree(srcElement: HTMLElement, destElement: HTMLElement,
                   continueParse:boolean=false,
-                  tempElement: HTMLElement = null as unknown as HTMLElement): HTMLElement {
+                  tempElement: HTMLElement = null): HTMLElement {
 
         let currentSrc = srcElement.firstChild as HTMLElement;
         let currentDest;
@@ -589,14 +592,14 @@ export default class Indigo {
             if(currentSrc.nodeName.toLowerCase()!="#text" && currentSrc.nodeName.toLowerCase()!="#comment" && currentSrc.hasAttribute("indigo-cache-id"))
                 hasComponent=true;
 
-            if(hasComponent){
+            if(hasComponent){ // Текущий узел виртуального дерева является компонентом
                 let componentId=Number.parseInt(currentSrc.getAttribute("indigo-cache-id") as string);
                 let component=this.componentCache.get(componentId);
 
                 this.pushComponent(component);
                 this.currentComponent.onBeforeMount();
 
-                //Просматриваем дерево вглубь компонента
+                //Просматриваем переключаемся на виртуальное дерево вглубь
                 currentDest=this.parseRDOMTree(currentSrc, destElement, true, currentDest as HTMLElement);
                 (component as RealComponent).onMount();
                 this.popComponent();
@@ -623,14 +626,16 @@ export default class Indigo {
             //Создаем новый узел
             this.parseRDOMTreeItem(currentSrc, destElement, currentDest as HTMLElement);
 
-            currentSrc = (currentSrc as ChildNode).nextSibling as HTMLElement;
+            currentSrc = (currentSrc as ChildNode).nextSibling as HTMLElement; //Передвигаемся на узел узел в виртуальном дереве
 
             if (currentDest)
-                currentDest = currentDest.nextSibling as HTMLElement;
+                currentDest = currentDest.nextSibling as HTMLElement; //передвигаемся на один узел в реальном дереве
         }
 
         // В узле реального дерева болше элементов чем в виртуальном дереве, удаляем лишнее
-        if(currentDest /*&& !srcElement.hasAttribute("indigo-cache-id")*/){
+        if(currentDest && (!srcElement.hasAttribute("indigo-cache-id") || srcElement.parentNode==null)  ){
+
+            console.log(currentDest);
 
             let destNodes = new Array<HTMLElement>()
 
@@ -643,8 +648,9 @@ export default class Indigo {
                 item.remove();
         }
 
-        return(currentDest as unknown as HTMLElement);
+        return(currentDest as HTMLElement);
     }
+
 
     //Вызывается при имзенении состояния компонента
     renderComponent(component:RealComponent)
@@ -765,7 +771,7 @@ export default class Indigo {
                 //srcAttr - функция в родительском компоненте, например methods.onCustomEvent
                 if(srcElement==this.currentComponent.baseElement){
 
-                    let eventName=this.camelCase((srcAttr.name.slice(1)));
+                    let eventName=this.camelCase((srcAttr.name.slice(1))); //Имя события, mouse-over преобразуется в mouseOver
                     const eventFunc=this.evalExpression(srcAttr.value, this.currentComponent.parent);
 
                     if(!eventFunc || typeof eventFunc != "function")

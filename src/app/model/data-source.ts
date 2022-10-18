@@ -13,7 +13,7 @@ let Data =[
 export default class DataSource {
     onChange: Function;
     data: Array<TaskItemData> = Array();
-    currentId=7;
+    currentId=10
 
     constructor(onChange: Function) {
         this.onChange=onChange;
@@ -21,8 +21,14 @@ export default class DataSource {
 
 
     sendData(callback: Function){
+        let cursor=document.body.style.cursor;
+        document.body.style.cursor="wait"
+
         return(new Promise( (resolve)=>{
             setTimeout(() => {
+
+                document.body.style.cursor="auto";
+
                 callback();
                 resolve(this)
             }, 200);
@@ -47,7 +53,7 @@ export default class DataSource {
     }
 
     addItem(title: string){
-        let item={title:title, id:this.currentId, done:false, important:false}
+        let item={title:title, id:this.currentId++, done:false, important:false}
 
         return(this.sendData(
             ()=>{
